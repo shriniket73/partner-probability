@@ -14,11 +14,8 @@ import {
   Users,  // For gender
   CalendarRange,  // For age
   Ruler,  // For height
-  IndianRupee,  // For income
-  Heart,  // For healthy body
   Cigarette,  // For smoking
   Wine,  // For drinking
-  Sparkles,  // For activity
   BriefcaseBusiness,
   VenetianMask,
   Activity
@@ -46,6 +43,10 @@ interface CalculatorCriteria {
   alcohol: AlcoholFrequency;
 }
 
+// For CalculatorCriteria, if it's needed for type checking:
+type Props = {
+  criteria: CalculatorCriteria;  // Now it's used
+};
 
 // Constants
 const genderOptions: Gender[] = ['male', 'female'];
