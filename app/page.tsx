@@ -7,9 +7,16 @@ import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { CustomTooltip } from "@/components/ui/custom-tooltip";
+import { VideoDialog } from "@/components/ui/video-dialog";
 import { calculateTotalProbability } from '@/models/calculations/calculationService';
-import { UICalculatorCriteria } from '@/models/calculations/criteriaMapper';
-import { Gender } from '@/models/types/common';
+import { 
+  Gender, 
+  SmokingFrequency, 
+  AlcoholFrequency, 
+  ActivityType,
+  CalculatorCriteria 
+} from '@/models/types/common';
 import { 
   Users,  // For gender
   CalendarRange,  // For age
@@ -22,26 +29,6 @@ import {
 } from 'lucide-react';
 
 
-// Type definitions
-type SmokingFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
-type AlcoholFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
-type ActivityType = 'never' | 'withinWeek' | 'withinMonth' | 'withinYear' | 'doesnt_matter';
-type Gender = 'male' | 'female';
-
-// Interfaces
-interface CalculatorCriteria {
-  ageRange: [number, number];
-  gender: Gender;
-  minHeight: number;
-  minIncome: number;
-  healthyBody: boolean;
-  noSmoking: boolean;     // Add this
-  noDrinking: boolean;    // Add this
-  previousPartners: 'none' | 'some' | 'doesnt_matter';
-  sexualActivity: ActivityType;
-  smoking: SmokingFrequency;
-  alcohol: AlcoholFrequency;
-}
 
 // For CalculatorCriteria, if it's needed for type checking:
 type Props = {
@@ -73,6 +60,31 @@ const sexualActivityOptions: { value: ActivityType; label: string }[] = [
   { value: 'withinYear', label: 'Within Year' },
   { value: 'doesnt_matter', label: "Doesn't Matter" }
 ];
+
+const healthyBodyInfo = (
+  <div className="space-y-2">
+    <p className="font-medium mb-1">Considers:</p>
+    <ul className="list-disc pl-4 space-y-1">
+      <li>BMI</li>
+      <li>Waist to hip ratio</li>
+      <li>No chronic conditions</li>
+      <li>Normal diabetes and blood pressure</li>
+    </ul>
+  </div>
+);
+
+
+const confidenceInfo = (
+  <div>
+    Reliability measure (0-100%):
+    <br />
+    90%+ : Very reliable
+    <br />
+    70-90%: Fairly reliable
+    <br />
+    Below 70%: Less reliable
+  </div>
+);
 
 function formatProbabilityResult(result: number): string {
   if (result === 0) return '0.000%';
@@ -106,7 +118,7 @@ function formatProbabilityResult(result: number): string {
 }
 
 export default function DelusionCalculator() {
-  const [criteria, setCriteria] = useState<UICalculatorCriteria>({
+  const [criteria, setCriteria] = useState<CalculatorCriteria>({
     ageRange: [24, 28],
     gender: 'male',
     minHeight: 5,
@@ -145,13 +157,18 @@ export default function DelusionCalculator() {
 
 
   const formatHeight = (height: number) => `${Math.floor(height)}'${Math.round((height % 1) * 12)}"`;
-  const formatIncome = (income: number) => `${income} LPA`;
+  const formatIncome = (income: number) => {
+    if (income >= 100) {
+      return `${(income/100).toFixed(1)} Cr PA`;
+    }
+    return `${income} LPA`;
+  };
 
   return (
     <div className="container mx-auto p-4 space-y-6">
       <Card className="w-full max-w-3xl mx-auto bg-neutral-800 border border-white shadow-lg text-white">
         <CardHeader>
-          <CardTitle>Delusion Calculator</CardTitle>
+          <CardTitle>Partner Probability Calculator</CardTitle>
           <CardDescription>Find out the probability of meeting your ideal partner in India</CardDescription>
         </CardHeader>
         <CardContent className="space-y-8">
@@ -227,7 +244,7 @@ export default function DelusionCalculator() {
             <Slider
             value={[criteria.minIncome]}
             min={1}
-            max={50}
+            max={100}
             step={1}
             onValueChange={(value) => {
               if (Array.isArray(value)) {
@@ -242,64 +259,72 @@ export default function DelusionCalculator() {
           </div>
 
           {/* Health and Lifestyle */}
-          <div className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center space-x-4">
-                <Checkbox
-                  id="healthyBody"
-                  checked={criteria.healthyBody}
-                  onCheckedChange={(checked) => 
-                    setCriteria(prev => ({ ...prev, healthyBody: checked as boolean }))}
-                />
-                  <Label className="flex items-center"> Healthy Body </Label>
-                   <Activity className="w-4 h-4 ml-1 text-white" />
-              </div>
-            </div>
-
-            {/* Smoking Preferences */}
-            <div className="space-y-4">
-                <Label className="flex items-center"> Smoking Habits
-                  <Cigarette className="w-4 h-4 ml-1 text-white" />
-                </Label>
-              <div className="grid grid-cols-2 gap-4">
-                {smokingOptions.map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={criteria.smoking === option.value}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setCriteria(prev => ({ ...prev, smoking: option.value }));
-                        }
-                      }}
-                    />
-                    <Label>{option.label}</Label>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Alcohol Preferences */}
-            <div className="space-y-4">
-                <Label className="flex items-center">Drinking Habits
-                  <Wine className="w-4 h-4 ml-1 text-white" />
-                </Label>
-              <div className="grid grid-cols-2 gap-4">
-                {alcoholOptions.map(option => (
-                  <div key={option.value} className="flex items-center space-x-2">
-                    <Checkbox
-                      checked={criteria.alcohol === option.value}
-                      onCheckedChange={(checked) => {
-                        if (checked) {
-                          setCriteria(prev => ({ ...prev, alcohol: option.value }));
-                        }
-                      }}
-                    />
-                    <Label>{option.label}</Label>
-                  </div>
-                ))}
-              </div>
+          <div className="flex items-center space-x-4">
+            <Checkbox
+              id="healthyBody"
+              checked={criteria.healthyBody}
+              onCheckedChange={(checked) => 
+                setCriteria(prev => ({ ...prev, healthyBody: checked as boolean }))}
+            />
+            <div className="flex items-center gap-1">
+              <Label htmlFor="healthyBody">Healthy Body</Label>
+              <CustomTooltip 
+                content={healthyBodyInfo}
+                iconClassName="w-4 h-4 text-white hover:text-gray-300"
+                side="right"
+              />
             </div>
           </div>
+
+          {/* Smoking Preferences */}
+          <div className="space-y-4">
+            <div className="flex items-center">
+            <Label className="flex items-center">Smoking Habits
+              <Cigarette className="w-4 h-4 ml-1" />
+              </Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {smokingOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={criteria.smoking === option.value}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setCriteria(prev => ({ ...prev, smoking: option.value }));
+                      }
+                    }}
+                  />
+                  <Label>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Drinking Preferences */}
+          <div className="space-y-4">
+            <div className="flex items-center">
+              <Label className="flex items-center">Drinking Habits
+              <Wine className="w-4 h-4 ml-1 text-white" />
+              </Label>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              {alcoholOptions.map(option => (
+                <div key={option.value} className="flex items-center space-x-2">
+                  <Checkbox
+                    checked={criteria.alcohol === option.value}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        setCriteria(prev => ({ ...prev, alcohol: option.value }));
+                      }
+                    }}
+                  />
+                  <Label>{option.label}</Label>
+                </div>
+              ))}
+            </div>
+          </div>
+
+
 
           {/* Sexual Activity */}
           <div className="space-y-4">
@@ -348,7 +373,7 @@ export default function DelusionCalculator() {
         <Card className="w-full max-w-3xl mx-auto bg-neutral-800 border border-white shadow-lg text-white">
           <CardContent className="flex justify-between items-center p-6 space-x-4">
             <div className="space-y-2">
-            <p>Looking for a {criteria.gender} partner</p>
+              <p>Looking for a {criteria.gender} partner</p>
               <p>Age: {criteria.ageRange[0]} to {criteria.ageRange[1]}</p>
               <p>Height: at least {formatHeight(criteria.minHeight)}</p>
               <p>Income: at least {formatIncome(criteria.minIncome)}</p>
@@ -360,17 +385,33 @@ export default function DelusionCalculator() {
               }</p>
             </div>
 
-            <div className="w-px h-full bg-white" />
+            <div className="text-center flex flex-col items-center">
+              <div className="space-y-3 mb-8">
+                <p className="text-lg">Probability of finding your ideal partner:</p>
+                <p className="text-4xl font-bold">
+                  {formatProbabilityResult(result)}
+                </p>
+              </div>
 
-            <div className="text-center">
-              <p className="text-lg">Probability of finding your ideal partner:</p>
-              <p className="text-4xl font-bold mt-2">
-                {formatProbabilityResult(result)}
-              </p>
-              <p className="text-sm text-gray-400 italic">
-                Confidence Score: {(overallConfidence * 100).toFixed(2)}%
-              </p>
-              <p className="text-xs text-gray-400 italic">
+              <div className="flex items-center justify-center text-sm text-gray-400 italic mb-6">
+                <span>Confidence Score: {(overallConfidence * 100).toFixed(2)}%</span>
+                <CustomTooltip 
+                  content={confidenceInfo}
+                  iconClassName="w-3 h-3 text-gray-400 hover:text-gray-300"
+                  side="right"
+                />
+              </div>
+
+              {/* Space reserved for button that doesn't affect layout */}
+              <div className="h-0 relative">
+                <div className="absolute left-1/2 -translate-x-1/2 mb-6">
+                  <VideoDialog shouldShow={result < 0.1} />
+                </div>
+              </div>
+
+              <div className="w-2/3 h-px bg-gray-700 mt-16 mb-8" /> {/* Added mt-16 to create space for button */}
+
+              <p className="text-xs text-gray-400 italic max-w-sm px-4">
                 Note: Results are estimates based on demographic data and should be considered approximations.
               </p>
             </div>

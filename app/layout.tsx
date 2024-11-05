@@ -2,7 +2,7 @@ import "./globals.css"
 import React from "react"
 
 export const metadata = {
-  title: "Delusion Calculator",
+  title: "Partner Matching Probability  Calculator",
   description: "Find your ideal partner match probability",
 }
 

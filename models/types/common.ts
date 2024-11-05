@@ -1,6 +1,5 @@
 // models/types/common.ts
 
-export type Gender = 'male' | 'female';
 
 export interface BaseProbabilityResult {
   probability: number;
@@ -15,7 +14,8 @@ export class ValidationError extends Error {
   }
 }
 
-export type SexualActivityType = 'never' | 'withinWeek' | 'withinMonth' | 'withinYear';
+export type Gender = 'male' | 'female';
+export type ActivityType = 'never' | 'withinWeek' | 'withinMonth' | 'withinYear';
 export type SmokingFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
 export type AlcoholFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
 
@@ -27,7 +27,7 @@ export interface CalculatorCriteria {
   healthyBody: boolean;
   noSmoking: boolean;
   noDrinking: boolean;
-  sexualActivity: SexualActivityType;
+  sexualActivity: ActivityType;
   smoking: SmokingFrequency;
   alcohol: AlcoholFrequency;
 }

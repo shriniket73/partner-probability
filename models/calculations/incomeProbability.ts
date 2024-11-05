@@ -6,7 +6,7 @@ import { incomeData, IncomeBracket } from '../data/incomeData';
 export interface IncomePreference {
   value: number | null;
   comparison?: 'minimum' | 'maximum' | 'range';
-  maxValue?: number;  // For range comparison
+  maxValue?: number;
 }
 
 export interface IncomeProbabilityParams {
@@ -21,6 +21,80 @@ export interface IncomeProbabilityResult extends BaseProbabilityResult {
     adjustedIncome: number;
     targetRange?: [number, number];
   };
+}
+
+function calculateMinimumProbability(income: number, brackets: IncomeBracket[]): number {
+  const annualIncome = income;
+
+  if (annualIncome < brackets[0].threshold) {
+    return 1;
+  }
+
+  for (let i = 0; i < brackets.length - 1; i++) {
+    if (annualIncome > brackets[i].threshold && annualIncome <= brackets[i + 1].threshold) {
+      const lowerBracket = brackets[i];
+      const upperBracket = brackets[i + 1];
+      
+      const logIncomeLower = Math.log(lowerBracket.threshold);
+      const logIncomeUpper = Math.log(upperBracket.threshold);
+      const logIncomeTarget = Math.log(annualIncome);
+      
+      const logProbLower = Math.log(lowerBracket.percentage);
+      const logProbUpper = Math.log(upperBracket.percentage);
+      
+      const position = (logIncomeTarget - logIncomeLower) / (logIncomeUpper - logIncomeLower);
+      const logProb = logProbLower + (logProbUpper - logProbLower) * position;
+      
+      return Math.exp(logProb);
+    }
+  }
+
+  const lastBracket = brackets[brackets.length - 1];
+  const logFactor = Math.log(annualIncome / lastBracket.threshold + 1) / Math.log(2);
+  return Math.max(lastBracket.percentage * Math.exp(-logFactor), 0.00001);
+}
+
+function calculateMaximumProbability(income: number, brackets: IncomeBracket[]): number {
+  const annualIncome = income * 100000;
+  
+  for (let i = 0; i < brackets.length; i++) {
+    if (annualIncome <= brackets[i].threshold) {
+      if (i === 0) return 1;
+      
+      const lowerBracket = i > 0 ? brackets[i - 1] : brackets[0];
+      const upperBracket = brackets[i];
+      
+      const logIncomeLower = Math.log(lowerBracket.threshold);
+      const logIncomeUpper = Math.log(upperBracket.threshold);
+      const logIncomeTarget = Math.log(annualIncome);
+      
+      const logProbLower = Math.log(lowerBracket.percentage);
+      const logProbUpper = Math.log(upperBracket.percentage);
+      
+      const position = (logIncomeTarget - logIncomeLower) / (logIncomeUpper - logIncomeLower);
+      const logProb = logProbLower + (logProbUpper - logProbLower) * position;
+      return Math.exp(logProb);
+    }
+  }
+  return 1;
+}
+
+function calculateRangeProbability(minIncome: number, maxIncome: number, brackets: IncomeBracket[]): number {
+  const minProb = calculateMinimumProbability(minIncome, brackets);
+  const maxProb = calculateMaximumProbability(maxIncome, brackets);
+  return Math.abs(maxProb - minProb);
+}
+
+function calculateConfidence(income: number, gender: Gender): number {
+  let confidence = 0.90;
+  const annualIncome = income * 100000;
+  
+  if (annualIncome > 20000000) confidence *= 0.85;
+  if (annualIncome > 50000000) confidence *= 0.80;
+  if (annualIncome > 100000000) confidence *= 0.75;
+  if (gender === 'female') confidence *= 0.95;
+
+  return Math.max(0.65, confidence);
 }
 
 function validateInputs(params: IncomeProbabilityParams): void {
@@ -54,68 +128,25 @@ export function calculateIncomeProbability(params: IncomeProbabilityParams): Inc
     const { targetGender, incomePreference } = params;
     const genderData = incomeData[targetGender];
 
-    // Determine the adjusted income considering female adjustment if applicable
-    const adjustedIncome = incomePreference.value! * (targetGender === 'female' ? genderData.femaleAdjustment : 1);
-
-    // Calculate probability based on income brackets
-    let probability = 0;
-    if (incomePreference.comparison === 'minimum') {
-      probability = calculateMinimumProbability(adjustedIncome, genderData.baseBrackets);
-    } else if (incomePreference.comparison === 'maximum') {
-      probability = calculateMaximumProbability(adjustedIncome, genderData.baseBrackets);
-    } else if (incomePreference.comparison === 'range' && incomePreference.maxValue) {
-      probability = calculateRangeProbability(adjustedIncome, incomePreference.maxValue, genderData.baseBrackets);
-    } else {
-      // Default to minimum comparison
-      probability = calculateMinimumProbability(adjustedIncome, genderData.baseBrackets);
-    }
-
-
-    // Apply a logarithmic scaling to adjust the probability
-    probability = Math.log(probability + 1) / Math.log(2); // Logarithmic adjustment to provide better distribution
-
-    // Cap probability between 0 and 1
-    probability = Math.max(0, Math.min(1, probability));
+    const probability = calculateMinimumProbability(incomePreference.value!, genderData.baseBrackets);
+    const adjustedProbability = probability * genderData.femaleAdjustment;
+    const confidence = calculateConfidence(incomePreference.value!, targetGender);
 
     return {
-      probability,
-      confidence: 0.85, // Base confidence value
+      probability: Math.max(0, Math.min(1, adjustedProbability)),
+      confidence,
       details: {
-        medianIncome: genderData.baseBrackets[0].threshold,
-        adjustedIncome,
-        targetRange: incomePreference.comparison === 'range' ? [incomePreference.value, incomePreference.maxValue!] : undefined,
+        medianIncome: genderData.baseBrackets[0].threshold / 100000,
+        adjustedIncome: incomePreference.value!,
+        targetRange: undefined
       }
     };
   } catch (error) {
     if (error instanceof ValidationError) {
-      console.error('Validation Error:', error.message); // Log validation errors
       throw error;
     }
-    console.error('Unexpected Error:', error.message); // Log unexpected errors
     throw new Error('Failed to calculate income probability');
   }
 }
 
-function calculateRangeProbability(minIncome: number, maxIncome: number, brackets: IncomeBracket[]): number {
-  const minProb = calculateMinimumProbability(minIncome, brackets);
-  const maxProb = calculateMaximumProbability(maxIncome, brackets);
-  return Math.abs(maxProb - minProb);
-}
-
-function calculateMinimumProbability(income: number, brackets: IncomeBracket[]): number {
-  for (let i = 0; i < brackets.length; i++) {
-    if (income <= brackets[i].threshold) {
-      return brackets[i].percentage; // Directly use the percentage to indicate how rare the income level is
-    }
-  }
-  return brackets[brackets.length - 1].percentage; // Return the lowest percentage for very high incomes
-}
-
-function calculateMaximumProbability(income: number, brackets: IncomeBracket[]): number {
-  for (let i = 0; i < brackets.length; i++) {
-    if (income <= brackets[i].threshold) {
-      return brackets[i].percentage;
-    }
-  }
-  return 1;
-}
+export { validateInputs, calculateConfidence };

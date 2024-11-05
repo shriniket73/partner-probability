@@ -61,7 +61,7 @@ import {
   export async function calculateTotalProbability(criteria: CalculatorCriteria) {
     try {
       const params = mapUIToCalculationParams(criteria) as CalculationParams;
-      
+   
       // Calculate individual probabilities
       const heightProb = calculateHeightProbability(params.heightParams);
       console.log('Height Probability:', heightProb);
