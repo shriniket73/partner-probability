@@ -15,7 +15,7 @@ export class ValidationError extends Error {
 }
 
 export type Gender = 'male' | 'female';
-export type ActivityType = 'never' | 'withinWeek' | 'withinMonth' | 'withinYear';
+export type ActivityType = 'never' | 'withinWeek' | 'withinMonth' | 'withinYear' | 'doesnt_matter';
 export type SmokingFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
 export type AlcoholFrequency = 'never' | 'daily' | 'occasionally' | 'doesnt_matter';
 
