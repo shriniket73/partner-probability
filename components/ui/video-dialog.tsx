@@ -1,62 +1,87 @@
 // components/ui/video-dialog.tsx
-"use client"
-
-import { useEffect, useRef } from "react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-  DialogTitle,
-} from "@/components/ui/dialog";
+import { Play } from "lucide-react";
+import { useState, useEffect } from "react";
 
 interface VideoDialogProps {
-  shouldShow: boolean;
+  shouldShow?: boolean;
 }
 
-export function VideoDialog({ shouldShow }: VideoDialogProps) {
-  const videoRef = useRef<HTMLVideoElement>(null);
+export function VideoDialog({ shouldShow = true }: VideoDialogProps) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [currentVideo, setCurrentVideo] = useState("");
+  const [videoFiles, setVideoFiles] = useState<string[]>([]);
+  const [playedVideos, setPlayedVideos] = useState<string[]>([]);
 
   useEffect(() => {
-    // Auto-play when dialog opens
-    if (videoRef.current) {
-      videoRef.current.load();
-    }
+    const fetchVideos = async () => {
+      try {
+        const response = await fetch('/api/videos');
+        const data = await response.json();
+        if (data.videos) {
+          setVideoFiles(data.videos);
+        }
+      } catch (error) {
+        console.error('Failed to fetch videos:', error);
+      }
+    };
+
+    fetchVideos();
   }, []);
 
-  if (!shouldShow) {
-    return null;
-  }
+  const getRandomVideo = () => {
+    const availableVideos = videoFiles.filter(video => !playedVideos.includes(video));
+    
+    if (availableVideos.length === 0) {
+      setPlayedVideos([]);
+      const randomVideo = videoFiles[Math.floor(Math.random() * videoFiles.length)];
+      return `/videos/${randomVideo}`;
+    }
+
+    const randomVideo = availableVideos[Math.floor(Math.random() * availableVideos.length)];
+    setPlayedVideos(prev => [...prev, randomVideo]);
+    return `/videos/${randomVideo}`;
+  };
+
+  const handleOpenDialog = () => {
+    if (videoFiles.length > 0) {
+      setCurrentVideo(getRandomVideo());
+      setIsOpen(true);
+    }
+  };
+
+  if (!shouldShow) return null;
 
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button 
-          variant="outline" 
-          className="bg-neutral-800 text-white hover:bg-neutral-700 transition-colors"
-        >
-          How should I react? 🤔
-        </Button>
-      </DialogTrigger>
-      <DialogContent 
-        className="border border-gray-700 bg-neutral-900/95 backdrop-blur-sm p-3 w-[400px] shadow-2xl" 
-        style={{ maxWidth: '90vw' }}
+    <>
+      <Button 
+        variant="outline" 
+        onClick={handleOpenDialog}
+        className="flex items-center gap-2"
       >
-        <DialogTitle className="sr-only">Reaction Video</DialogTitle>
-        <div className="rounded-xl overflow-hidden shadow-inner">
+       How should I react?
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="p-0 bg-black w-[300px] sm:w-[400px] rounded-lg overflow-hidden flex items-center justify-center">
+          <DialogTitle className="aspect-video"></DialogTitle>
           <video
-            ref={videoRef}
-            className="w-full aspect-video"
-            preload="auto"
+            className="w-full h-full object-fill m-0 p-0 block"
             autoPlay
             loop
-            playsInline // Better mobile support
+            playsInline
+            src={currentVideo}
+            style={{
+                minWidth: '100%',
+                minHeight: '100%',
+              }}
+            onError={(e) => console.error('Video playback error:', e)}
           >
-            <source src="/images/reaction.mp4" type="video/mp4" />
             Your browser does not support the video tag.
           </video>
-        </div>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

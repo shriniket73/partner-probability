@@ -5,7 +5,11 @@ module.exports = {
       "./components/**/*.{js,ts,jsx,tsx}",
     ],
     theme: {
-      extend: {},
+      extend: {
+        fontSize: {
+          'label': '1.05rem', // You can adjust this value
+        }
+      }
     },
     // safelist: [
     //   'rounded-md', // Add this line if needed

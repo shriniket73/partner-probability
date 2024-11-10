@@ -40,8 +40,8 @@ function validateInputs(params: HeightProbabilityParams): void {
   }
 
   if (heightPreference.value !== null) {
-    if (heightPreference.value < 121 || heightPreference.value > 213) {
-      throw new ValidationError('Height preference must be between 121 cm and 213 cm');
+    if (heightPreference.value < 121 || heightPreference.value > 214) {
+      throw new ValidationError('Height preference must be between 121 cm and 214 cm');
     }
   }
 }
@@ -52,6 +52,41 @@ function getAgeGroup(age: number): string {
   if (age <= 45) return "36-45";
   if (age <= 55) return "46-55";
   return "56-65";
+}
+
+// Enhanced normal CDF calculation with minimum probability threshold
+function normalCDF(x: number): number {
+  // Set minimum probability to avoid returning exact 0
+  const MIN_PROBABILITY = 1e-308; // Smallest possible JavaScript number
+  
+  let probability = (1 + erf(x / Math.sqrt(2))) / 2;
+  
+  // Log the calculation details for debugging
+  console.log('Normal CDF calculation:', {
+    input: x,
+    rawProbability: probability,
+    finalProbability: Math.max(MIN_PROBABILITY, probability)
+  });
+  
+  return Math.max(MIN_PROBABILITY, probability);
+}
+
+// Improved error function implementation
+function erf(x: number): number {
+  const a1 =  0.254829592;
+  const a2 = -0.284496736;
+  const a3 =  1.421413741;
+  const a4 = -1.453152027;
+  const a5 =  1.061405429;
+  const p  =  0.3275911;
+
+  const sign = x < 0 ? -1 : 1;
+  x = Math.abs(x);
+
+  const t = 1.0 / (1.0 + p * x);
+  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
+
+  return sign * y;
 }
 
 export function calculateHeightProbability(params: HeightProbabilityParams): HeightProbabilityResult {
@@ -88,9 +123,22 @@ export function calculateHeightProbability(params: HeightProbabilityParams): Hei
     const ageAdjustedMean = sumOfMeans / ageGroupsCount;
     const stdDev = genderData.standardDeviation;
 
+    // Calculate z-score
+    const zScore = (heightPreference.value - ageAdjustedMean) / stdDev;
+
     // Calculate probability based on preference
     let probability: number;
-    const zScore = (heightPreference.value - ageAdjustedMean) / stdDev;
+    let confidence = 0.85; // base confidence
+
+    // Log calculation details
+    console.log('Height Calculation Details:', {
+      targetGender,
+      preferenceValue: heightPreference.value,
+      ageAdjustedMean,
+      standardDeviation: stdDev,
+      zScore,
+      comparison: heightPreference.comparison
+    });
 
     switch (heightPreference.comparison) {
       case 'minimum':
@@ -107,9 +155,26 @@ export function calculateHeightProbability(params: HeightProbabilityParams): Hei
         probability = normalCDF(upperZScore) - normalCDF(lowerZScore);
     }
 
+    // Adjust confidence based on how extreme the height is
+    const stdDevsAway = Math.abs(zScore);
+    if (stdDevsAway > 4) {
+      confidence *= 0.6; // very extreme heights
+    } else if (stdDevsAway > 3) {
+      confidence *= 0.7; // quite extreme heights
+    } else if (stdDevsAway > 2) {
+      confidence *= 0.85; // somewhat extreme heights
+    }
+
+    // Log final results
+    console.log('Height Probability Result:', {
+      probability,
+      confidence,
+      stdDevsAway
+    });
+
     return {
-      probability: Math.max(0, Math.min(1, probability)),
-      confidence: 0.85,
+      probability: Math.max(1e-308, Math.min(1, probability)), // Ensure minimum probability
+      confidence,
       details: {
         meanHeight: genderData.mean,
         standardDeviation: stdDev,
@@ -119,32 +184,10 @@ export function calculateHeightProbability(params: HeightProbabilityParams): Hei
     };
 
   } catch (error) {
+    console.error('Height probability calculation error:', error);
     if (error instanceof ValidationError) {
       throw error;
     }
     throw new Error('Failed to calculate height probability');
   }
-}
-
-// Helper function for normal cumulative distribution
-function normalCDF(x: number): number {
-  return (1 + erf(x / Math.sqrt(2))) / 2;
-}
-
-// Error function implementation
-function erf(x: number): number {
-  const a1 =  0.254829592;
-  const a2 = -0.284496736;
-  const a3 =  1.421413741;
-  const a4 = -1.453152027;
-  const a5 =  1.061405429;
-  const p  =  0.3275911;
-
-  const sign = x < 0 ? -1 : 1;
-  x = Math.abs(x);
-
-  const t = 1.0 / (1.0 + p * x);
-  const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-x * x);
-
-  return sign * y;
 }
