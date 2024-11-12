@@ -59,14 +59,14 @@ function normalCDF(x: number): number {
   // Set minimum probability to avoid returning exact 0
   const MIN_PROBABILITY = 1e-308; // Smallest possible JavaScript number
   
-  let probability = (1 + erf(x / Math.sqrt(2))) / 2;
+  const probability = (1 + erf(x / Math.sqrt(2))) / 2;
   
-  // Log the calculation details for debugging
-  console.log('Normal CDF calculation:', {
-    input: x,
-    rawProbability: probability,
-    finalProbability: Math.max(MIN_PROBABILITY, probability)
-  });
+  // // Log the calculation details for debugging
+  // console.log('Normal CDF calculation:', {
+  //   input: x,
+  //   rawProbability: probability,
+  //   finalProbability: Math.max(MIN_PROBABILITY, probability)
+  // });
   
   return Math.max(MIN_PROBABILITY, probability);
 }
@@ -130,15 +130,15 @@ export function calculateHeightProbability(params: HeightProbabilityParams): Hei
     let probability: number;
     let confidence = 0.85; // base confidence
 
-    // Log calculation details
-    console.log('Height Calculation Details:', {
-      targetGender,
-      preferenceValue: heightPreference.value,
-      ageAdjustedMean,
-      standardDeviation: stdDev,
-      zScore,
-      comparison: heightPreference.comparison
-    });
+    // // Log calculation details
+    // console.log('Height Calculation Details:', {
+    //   targetGender,
+    //   preferenceValue: heightPreference.value,
+    //   ageAdjustedMean,
+    //   standardDeviation: stdDev,
+    //   zScore,
+    //   comparison: heightPreference.comparison
+    // });
 
     switch (heightPreference.comparison) {
       case 'minimum':

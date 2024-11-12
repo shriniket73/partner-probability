@@ -121,28 +121,25 @@ export async function calculateTotalProbability(criteria: CalculatorCriteria) {
       let totalProbability = 1;
       probabilities.forEach(prob => {
         totalProbability *= prob.value;
-        console.log(`After multiplying ${prob.name}:`, totalProbability);
       });
   
-      // Calculate weighted confidence based on how selective each criterion is
-      const totalWeight = probabilities.reduce((sum, prob) => sum + (1 / prob.value), 0);
-      const weightedConfidence = (
-        (heightProb.confidence / heightProb.probability) +
-        (incomeProb.confidence / incomeProb.probability) +
-        (healthProb.confidence / healthProb.probability) +
-        (activityProb.confidence / activityProb.probability) +
-        (habitsProb.confidence / habitsProb.probability)
-      ) / totalWeight;
-  
-      console.log('Final Calculation Results:', {
-        totalProbability,
-        weightedConfidence,
-        probabilityComponents: probabilities,
-      });
+      const averageConfidence = (
+        heightProb.confidence + 
+        incomeProb.confidence + 
+        healthProb.confidence + 
+        activityProb.confidence + 
+        habitsProb.confidence
+      ) / 5;
+
+        console.log('Final Calculation Results:', {
+          totalProbability,
+          averageConfidence,
+          probabilityComponents: probabilities,
+        });
   
       return {
         probability: Math.max(0, Math.min(1, totalProbability)),
-        confidence: weightedConfidence,
+        confidence: averageConfidence,
         details: {
           height: heightProb,
           income: incomeProb,
