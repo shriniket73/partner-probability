@@ -3,7 +3,7 @@ import { Inter } from 'next/font/google'
 import React from "react"
 import { Analytics } from '@vercel/analytics/react';
 import { SpeedInsights } from "@vercel/speed-insights/next"
-
+import { CSPostHogProvider } from "./providers"
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -27,6 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <CSPostHogProvider>
       <body className={`${inter.className} relative`}>
         {/* Content wrapper for proper z-indexing */}
         <main className="relative z-10">
@@ -35,6 +36,7 @@ export default function RootLayout({
         <SpeedInsights />
         </main>
       </body>
+      </CSPostHogProvider>
     </html>
   )
 }
