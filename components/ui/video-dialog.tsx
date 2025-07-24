@@ -1,8 +1,7 @@
 // components/ui/video-dialog.tsx
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Play } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 interface VideoDialogProps {
   shouldShow?: boolean;
@@ -13,6 +12,7 @@ export function VideoDialog({ shouldShow = true }: VideoDialogProps) {
   const [currentVideo, setCurrentVideo] = useState("");
   const [videoFiles, setVideoFiles] = useState<string[]>([]);
   const [playedVideos, setPlayedVideos] = useState<string[]>([]);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
     const fetchVideos = async () => {
@@ -29,6 +29,20 @@ export function VideoDialog({ shouldShow = true }: VideoDialogProps) {
 
     fetchVideos();
   }, []);
+
+  useEffect(() => {
+    // Try to play the video when the dialog opens
+    if (isOpen && videoRef.current) {
+      const playVideo = async () => {
+        try {
+          await videoRef.current?.play();
+        } catch (error) {
+          console.error('Failed to autoplay video:', error);
+        }
+      };
+      playVideo();
+    }
+  }, [isOpen, currentVideo]);
 
   const getRandomVideo = () => {
     const availableVideos = videoFiles.filter(video => !playedVideos.includes(video));
@@ -67,17 +81,20 @@ export function VideoDialog({ shouldShow = true }: VideoDialogProps) {
         <DialogContent className="p-0 bg-black w-[300px] sm:w-[400px] rounded-lg overflow-hidden flex items-center justify-center">
           <DialogTitle className="aspect-video"></DialogTitle>
           <video
+            ref={videoRef}
             className="w-full h-full object-fill m-0 p-0 block"
             autoPlay
             loop
             playsInline
+            preload="auto"
             src={currentVideo}
             style={{
-                minWidth: '100%',
-                minHeight: '100%',
-              }}
+              minWidth: '100%',
+              minHeight: '100%',
+            }}
             onError={(e) => console.error('Video playback error:', e)}
           >
+            <source src={currentVideo} type="video/mp4" />
             Your browser does not support the video tag.
           </video>
         </DialogContent>

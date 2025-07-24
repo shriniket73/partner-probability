@@ -9,31 +9,10 @@ body {
   overflow-y: auto;
 }
 
-
 /* globals.css */
 .rounded-md-custom {
-  border-radius: 0.375rem !important; /* Forces Tailwind’s default `rounded-md` value */
+  border-radius: 0.375rem !important; /* Forces Tailwind's default `rounded-md` value */
 }
-
-body::before {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -2;
-  background-image: url('/images/perplex1.avif');
-  background-size: cover;
-  background-position: center;
-  background-repeat: no-repeat;
-  opacity: 1;
-}
-
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-}
-
 
 html, body {
   height: 100%;
@@ -45,25 +24,5 @@ html, body {
 @supports (-webkit-touch-callout: none) {
   .min-h-screen {
     min-height: -webkit-fill-available;
-  }
-}
-
-
-/* In globals.css */
-@media (max-width: 768px) {
-  body::before {
-    background-image: url('/images/bg1.jpg');
-  }
-}
-
-@media (min-width: 769px) and (max-width: 1024px) {
-  body::before {
-    background-image: url('/images/bg1.jpg');
-  }
-}
-
-@media (min-width: 1025px) {
-  body::before {
-    background-image: url('/images/bg1.jpg');
   }
 }

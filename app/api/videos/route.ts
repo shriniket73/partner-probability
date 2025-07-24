@@ -11,8 +11,22 @@ export async function GET() {
       ['.mp4', '.webm', '.mov'].includes(path.extname(file).toLowerCase())
     );
     
-    return NextResponse.json({ videos: videoFiles });
+    return new NextResponse(JSON.stringify({ videos: videoFiles }), {
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET',
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
+    });
   } catch (error) {
-    return NextResponse.json({ error: 'Failed to read videos directory' }, { status: 500 });
+    console.error('Error reading videos directory:', error);
+    return NextResponse.json({ error: `Failed to read videos directory: ${error}` }, { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   }
 }
