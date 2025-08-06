@@ -6,7 +6,6 @@ import { SpeedInsights } from "@vercel/speed-insights/next"
 import { CSPostHogProvider } from "./providers"
 import { PostHogScript } from "@/components/ui/PostHogScript"
 import Image from 'next/image'
-import Script from 'next/script'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -35,12 +34,7 @@ export default function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
         <link rel="preload" as="image" href="/images/bg1.jpg" />
         <PostHogScript />
-        <Script
-          async
-          src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-8366197937468365"
-          crossOrigin="anonymous"
-          strategy="afterInteractive"
-        />
+        <meta name="google-adsense-account" content="ca-pub-8366197937468365" />
       </head>
       <CSPostHogProvider>
         <body className={`${inter.className} relative min-h-screen`}>
